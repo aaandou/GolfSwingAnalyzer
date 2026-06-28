@@ -38,7 +38,7 @@ class GolfSwingAnalyzerApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      title: 'GolfSwingAnalyzer',
+      title: 'Shot Point Viewer',
       theme: appTheme,
       routerConfig: _router,
       debugShowCheckedModeBanner: false,
