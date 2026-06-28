@@ -1,13 +1,16 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 
+import '../../application/swing_analyzers/hit_angle_analyzer.dart';
+import '../../application/swing_analyzers/swing_analyzer.dart';
 import '../../application/use_cases/swing_session/delete_swing_session_use_case.dart';
 import '../../application/use_cases/swing_session/get_all_swing_sessions_use_case.dart';
 import '../../application/use_cases/swing_session/get_swing_session_use_case.dart';
-import '../../application/use_cases/swing_session/prepare_swing_clip_use_case.dart';
+import '../../application/use_cases/swing_session/prepare_swing_session_use_case.dart';
 import '../../application/use_cases/swing_session/save_swing_session_use_case.dart';
 import '../../data/repositories/swing_session_repository.dart';
 import '../../data/services/camera_recording_service.dart';
+import '../../data/services/club_face_angle_detection_service.dart';
 import '../../data/services/database_service.dart';
 import '../../data/services/impact_detection_service.dart';
 import '../../data/services/video_storage_service.dart';
@@ -26,6 +29,14 @@ final cameraRecordingServiceProvider = Provider((_) => CameraRecordingService())
 final impactDetectionServiceProvider = Provider((_) => ImpactDetectionService());
 
 final videoTrimServiceProvider = Provider((_) => VideoTrimService());
+
+final clubFaceAngleDetectionServiceProvider = Provider(
+  (_) => ClubFaceAngleDetectionService(),
+);
+
+final swingAnalyzersProvider = Provider<List<SwingAnalyzer>>(
+  (ref) => [HitAngleAnalyzer(ref.watch(clubFaceAngleDetectionServiceProvider))],
+);
 
 final swingSessionRepositoryProvider = Provider<ISwingSessionRepository>(
   (ref) => SwingSessionRepository(
@@ -54,11 +65,12 @@ final deleteSwingSessionUseCaseProvider = Provider(
       DeleteSwingSessionUseCase(ref.watch(swingSessionRepositoryProvider)),
 );
 
-final prepareSwingClipUseCaseProvider = Provider(
-  (ref) => PrepareSwingClipUseCase(
+final prepareSwingSessionUseCaseProvider = Provider(
+  (ref) => PrepareSwingSessionUseCase(
     ref.watch(impactDetectionServiceProvider),
     ref.watch(videoTrimServiceProvider),
     ref.watch(videoStorageServiceProvider),
+    ref.watch(swingAnalyzersProvider),
   ),
 );
 

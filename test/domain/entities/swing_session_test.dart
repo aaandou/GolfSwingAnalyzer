@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:golf_swing_analyzer/domain/entities/swing_session.dart';
 import 'package:golf_swing_analyzer/domain/value_objects/fps.dart';
+import 'package:golf_swing_analyzer/domain/value_objects/hit_angle.dart';
 import 'package:golf_swing_analyzer/domain/value_objects/swing_duration.dart';
 import 'package:golf_swing_analyzer/domain/value_objects/video_path.dart';
 
@@ -30,6 +31,18 @@ void main() {
 
     test('equal field values produce equal entities', () {
       expect(_buildSession(), _buildSession());
+    });
+
+    test('analysisAttributes defaults to an empty list', () {
+      expect(_buildSession().analysisAttributes, isEmpty);
+    });
+
+    test('copyWith can attach analysis attributes', () {
+      final updated = _buildSession().copyWith(
+        analysisAttributes: [HitAngle(12.3)],
+      );
+
+      expect(updated.analysisAttributes, [HitAngle(12.3)]);
     });
   });
 }

@@ -62,7 +62,7 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
   Future<void> _save() async {
     setState(() => _isProcessing = true);
     final prepared = await ref
-        .read(prepareSwingClipUseCaseProvider)
+        .read(prepareSwingSessionUseCaseProvider)
         .execute(widget.args.session);
     await ref.read(saveSwingSessionUseCaseProvider).execute(prepared);
     if (!mounted) return;
@@ -157,6 +157,20 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
                   ),
                 ),
               ),
+              if (widget.args.session.analysisAttributes.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: widget.args.session.analysisAttributes
+                        .map(
+                          (attribute) => Text(
+                            '${attribute.label}: ${attribute.displayValue}',
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ),
               ValueListenableBuilder<VideoPlayerValue>(
                 valueListenable: _controller,
                 builder: (context, value, _) {

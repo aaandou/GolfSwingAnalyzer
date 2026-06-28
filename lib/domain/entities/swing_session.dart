@@ -1,6 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import '../value_objects/fps.dart';
+import '../value_objects/swing_analysis_attribute.dart';
 import '../value_objects/swing_duration.dart';
 import '../value_objects/video_path.dart';
 
@@ -18,6 +19,7 @@ abstract class SwingSession with _$SwingSession {
     required Fps targetFps,
     String? note,
     @Default(true) bool impactDetected,
+    @Default([]) List<SwingAnalysisAttribute> analysisAttributes,
   }) = _SwingSession;
 
   String get durationLabel => duration.label;

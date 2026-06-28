@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$SwingSession {
 
- int get id; VideoPath get videoPath; DateTime get recordedAt; SwingDuration get duration; Fps get targetFps; String? get note; bool get impactDetected;
+ int get id; VideoPath get videoPath; DateTime get recordedAt; SwingDuration get duration; Fps get targetFps; String? get note; bool get impactDetected; List<SwingAnalysisAttribute> get analysisAttributes;
 /// Create a copy of SwingSession
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +25,16 @@ $SwingSessionCopyWith<SwingSession> get copyWith => _$SwingSessionCopyWithImpl<S
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SwingSession&&(identical(other.id, id) || other.id == id)&&(identical(other.videoPath, videoPath) || other.videoPath == videoPath)&&(identical(other.recordedAt, recordedAt) || other.recordedAt == recordedAt)&&(identical(other.duration, duration) || other.duration == duration)&&(identical(other.targetFps, targetFps) || other.targetFps == targetFps)&&(identical(other.note, note) || other.note == note)&&(identical(other.impactDetected, impactDetected) || other.impactDetected == impactDetected));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SwingSession&&(identical(other.id, id) || other.id == id)&&(identical(other.videoPath, videoPath) || other.videoPath == videoPath)&&(identical(other.recordedAt, recordedAt) || other.recordedAt == recordedAt)&&(identical(other.duration, duration) || other.duration == duration)&&(identical(other.targetFps, targetFps) || other.targetFps == targetFps)&&(identical(other.note, note) || other.note == note)&&(identical(other.impactDetected, impactDetected) || other.impactDetected == impactDetected)&&const DeepCollectionEquality().equals(other.analysisAttributes, analysisAttributes));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,videoPath,recordedAt,duration,targetFps,note,impactDetected);
+int get hashCode => Object.hash(runtimeType,id,videoPath,recordedAt,duration,targetFps,note,impactDetected,const DeepCollectionEquality().hash(analysisAttributes));
 
 @override
 String toString() {
-  return 'SwingSession(id: $id, videoPath: $videoPath, recordedAt: $recordedAt, duration: $duration, targetFps: $targetFps, note: $note, impactDetected: $impactDetected)';
+  return 'SwingSession(id: $id, videoPath: $videoPath, recordedAt: $recordedAt, duration: $duration, targetFps: $targetFps, note: $note, impactDetected: $impactDetected, analysisAttributes: $analysisAttributes)';
 }
 
 
@@ -45,7 +45,7 @@ abstract mixin class $SwingSessionCopyWith<$Res>  {
   factory $SwingSessionCopyWith(SwingSession value, $Res Function(SwingSession) _then) = _$SwingSessionCopyWithImpl;
 @useResult
 $Res call({
- int id, VideoPath videoPath, DateTime recordedAt, SwingDuration duration, Fps targetFps, String? note, bool impactDetected
+ int id, VideoPath videoPath, DateTime recordedAt, SwingDuration duration, Fps targetFps, String? note, bool impactDetected, List<SwingAnalysisAttribute> analysisAttributes
 });
 
 
@@ -62,7 +62,7 @@ class _$SwingSessionCopyWithImpl<$Res>
 
 /// Create a copy of SwingSession
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? videoPath = null,Object? recordedAt = null,Object? duration = null,Object? targetFps = null,Object? note = freezed,Object? impactDetected = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? videoPath = null,Object? recordedAt = null,Object? duration = null,Object? targetFps = null,Object? note = freezed,Object? impactDetected = null,Object? analysisAttributes = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,videoPath: null == videoPath ? _self.videoPath : videoPath // ignore: cast_nullable_to_non_nullable
@@ -71,7 +71,8 @@ as DateTime,duration: null == duration ? _self.duration : duration // ignore: ca
 as SwingDuration,targetFps: null == targetFps ? _self.targetFps : targetFps // ignore: cast_nullable_to_non_nullable
 as Fps,note: freezed == note ? _self.note : note // ignore: cast_nullable_to_non_nullable
 as String?,impactDetected: null == impactDetected ? _self.impactDetected : impactDetected // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,analysisAttributes: null == analysisAttributes ? _self.analysisAttributes : analysisAttributes // ignore: cast_nullable_to_non_nullable
+as List<SwingAnalysisAttribute>,
   ));
 }
 
@@ -156,10 +157,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  VideoPath videoPath,  DateTime recordedAt,  SwingDuration duration,  Fps targetFps,  String? note,  bool impactDetected)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  VideoPath videoPath,  DateTime recordedAt,  SwingDuration duration,  Fps targetFps,  String? note,  bool impactDetected,  List<SwingAnalysisAttribute> analysisAttributes)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SwingSession() when $default != null:
-return $default(_that.id,_that.videoPath,_that.recordedAt,_that.duration,_that.targetFps,_that.note,_that.impactDetected);case _:
+return $default(_that.id,_that.videoPath,_that.recordedAt,_that.duration,_that.targetFps,_that.note,_that.impactDetected,_that.analysisAttributes);case _:
   return orElse();
 
 }
@@ -177,10 +178,10 @@ return $default(_that.id,_that.videoPath,_that.recordedAt,_that.duration,_that.t
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  VideoPath videoPath,  DateTime recordedAt,  SwingDuration duration,  Fps targetFps,  String? note,  bool impactDetected)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  VideoPath videoPath,  DateTime recordedAt,  SwingDuration duration,  Fps targetFps,  String? note,  bool impactDetected,  List<SwingAnalysisAttribute> analysisAttributes)  $default,) {final _that = this;
 switch (_that) {
 case _SwingSession():
-return $default(_that.id,_that.videoPath,_that.recordedAt,_that.duration,_that.targetFps,_that.note,_that.impactDetected);case _:
+return $default(_that.id,_that.videoPath,_that.recordedAt,_that.duration,_that.targetFps,_that.note,_that.impactDetected,_that.analysisAttributes);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -197,10 +198,10 @@ return $default(_that.id,_that.videoPath,_that.recordedAt,_that.duration,_that.t
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  VideoPath videoPath,  DateTime recordedAt,  SwingDuration duration,  Fps targetFps,  String? note,  bool impactDetected)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  VideoPath videoPath,  DateTime recordedAt,  SwingDuration duration,  Fps targetFps,  String? note,  bool impactDetected,  List<SwingAnalysisAttribute> analysisAttributes)?  $default,) {final _that = this;
 switch (_that) {
 case _SwingSession() when $default != null:
-return $default(_that.id,_that.videoPath,_that.recordedAt,_that.duration,_that.targetFps,_that.note,_that.impactDetected);case _:
+return $default(_that.id,_that.videoPath,_that.recordedAt,_that.duration,_that.targetFps,_that.note,_that.impactDetected,_that.analysisAttributes);case _:
   return null;
 
 }
@@ -212,7 +213,7 @@ return $default(_that.id,_that.videoPath,_that.recordedAt,_that.duration,_that.t
 
 
 class _SwingSession extends SwingSession {
-  const _SwingSession({required this.id, required this.videoPath, required this.recordedAt, required this.duration, required this.targetFps, this.note, this.impactDetected = true}): super._();
+  const _SwingSession({required this.id, required this.videoPath, required this.recordedAt, required this.duration, required this.targetFps, this.note, this.impactDetected = true, final  List<SwingAnalysisAttribute> analysisAttributes = const []}): _analysisAttributes = analysisAttributes,super._();
   
 
 @override final  int id;
@@ -222,6 +223,13 @@ class _SwingSession extends SwingSession {
 @override final  Fps targetFps;
 @override final  String? note;
 @override@JsonKey() final  bool impactDetected;
+ final  List<SwingAnalysisAttribute> _analysisAttributes;
+@override@JsonKey() List<SwingAnalysisAttribute> get analysisAttributes {
+  if (_analysisAttributes is EqualUnmodifiableListView) return _analysisAttributes;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_analysisAttributes);
+}
+
 
 /// Create a copy of SwingSession
 /// with the given fields replaced by the non-null parameter values.
@@ -233,16 +241,16 @@ _$SwingSessionCopyWith<_SwingSession> get copyWith => __$SwingSessionCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SwingSession&&(identical(other.id, id) || other.id == id)&&(identical(other.videoPath, videoPath) || other.videoPath == videoPath)&&(identical(other.recordedAt, recordedAt) || other.recordedAt == recordedAt)&&(identical(other.duration, duration) || other.duration == duration)&&(identical(other.targetFps, targetFps) || other.targetFps == targetFps)&&(identical(other.note, note) || other.note == note)&&(identical(other.impactDetected, impactDetected) || other.impactDetected == impactDetected));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SwingSession&&(identical(other.id, id) || other.id == id)&&(identical(other.videoPath, videoPath) || other.videoPath == videoPath)&&(identical(other.recordedAt, recordedAt) || other.recordedAt == recordedAt)&&(identical(other.duration, duration) || other.duration == duration)&&(identical(other.targetFps, targetFps) || other.targetFps == targetFps)&&(identical(other.note, note) || other.note == note)&&(identical(other.impactDetected, impactDetected) || other.impactDetected == impactDetected)&&const DeepCollectionEquality().equals(other._analysisAttributes, _analysisAttributes));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,videoPath,recordedAt,duration,targetFps,note,impactDetected);
+int get hashCode => Object.hash(runtimeType,id,videoPath,recordedAt,duration,targetFps,note,impactDetected,const DeepCollectionEquality().hash(_analysisAttributes));
 
 @override
 String toString() {
-  return 'SwingSession(id: $id, videoPath: $videoPath, recordedAt: $recordedAt, duration: $duration, targetFps: $targetFps, note: $note, impactDetected: $impactDetected)';
+  return 'SwingSession(id: $id, videoPath: $videoPath, recordedAt: $recordedAt, duration: $duration, targetFps: $targetFps, note: $note, impactDetected: $impactDetected, analysisAttributes: $analysisAttributes)';
 }
 
 
@@ -253,7 +261,7 @@ abstract mixin class _$SwingSessionCopyWith<$Res> implements $SwingSessionCopyWi
   factory _$SwingSessionCopyWith(_SwingSession value, $Res Function(_SwingSession) _then) = __$SwingSessionCopyWithImpl;
 @override @useResult
 $Res call({
- int id, VideoPath videoPath, DateTime recordedAt, SwingDuration duration, Fps targetFps, String? note, bool impactDetected
+ int id, VideoPath videoPath, DateTime recordedAt, SwingDuration duration, Fps targetFps, String? note, bool impactDetected, List<SwingAnalysisAttribute> analysisAttributes
 });
 
 
@@ -270,7 +278,7 @@ class __$SwingSessionCopyWithImpl<$Res>
 
 /// Create a copy of SwingSession
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? videoPath = null,Object? recordedAt = null,Object? duration = null,Object? targetFps = null,Object? note = freezed,Object? impactDetected = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? videoPath = null,Object? recordedAt = null,Object? duration = null,Object? targetFps = null,Object? note = freezed,Object? impactDetected = null,Object? analysisAttributes = null,}) {
   return _then(_SwingSession(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,videoPath: null == videoPath ? _self.videoPath : videoPath // ignore: cast_nullable_to_non_nullable
@@ -279,7 +287,8 @@ as DateTime,duration: null == duration ? _self.duration : duration // ignore: ca
 as SwingDuration,targetFps: null == targetFps ? _self.targetFps : targetFps // ignore: cast_nullable_to_non_nullable
 as Fps,note: freezed == note ? _self.note : note // ignore: cast_nullable_to_non_nullable
 as String?,impactDetected: null == impactDetected ? _self.impactDetected : impactDetected // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,analysisAttributes: null == analysisAttributes ? _self._analysisAttributes : analysisAttributes // ignore: cast_nullable_to_non_nullable
+as List<SwingAnalysisAttribute>,
   ));
 }
 

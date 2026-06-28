@@ -28,25 +28,31 @@ lib/
 │   ├── value_objects/
 │   │   ├── video_path.dart        # VideoPath（非空保証）
 │   │   ├── fps.dart                # Fps（正の値保証）
-│   │   └── swing_duration.dart     # SwingDuration（非負保証・表示ラベル整形）
+│   │   ├── swing_duration.dart     # SwingDuration（非負保証・表示ラベル整形）
+│   │   ├── swing_analysis_attribute.dart  # SwingAnalysisAttribute（表示用インターフェース）
+│   │   └── hit_angle.dart          # HitAngle（SwingAnalysisAttribute実装）
 │   ├── repositories/
 │   │   └── i_swing_session_repository.dart  # Repositoryインターフェース
 │   └── exceptions/                # DomainException系
 ├── application/                   # アプリケーション層
 │   ├── dtos/
 │   │   └── playback_args.dart     # PlaybackArgs（@freezed）
+│   ├── swing_analyzers/
+│   │   ├── swing_analyzer.dart        # SwingAnalyzerインターフェース
+│   │   └── hit_angle_analyzer.dart    # SwingAnalyzer実装（ヒット角）
 │   └── use_cases/swing_session/
 │       ├── save_swing_session_use_case.dart
 │       ├── get_all_swing_sessions_use_case.dart
 │       ├── get_swing_session_use_case.dart
 │       ├── delete_swing_session_use_case.dart
-│       └── prepare_swing_clip_use_case.dart   # インパクト検出＋トリミングの中核
+│       └── prepare_swing_session_use_case.dart   # インパクト検出＋トリミング＋解析の中核
 ├── data/                          # Infrastructure層（フォルダ名は data/ のまま運用）
 │   ├── services/
 │   │   ├── camera_recording_service.dart      # cameraプラグインのラッパー
 │   │   ├── video_storage_service.dart         # 動画ファイルの永続化・削除
 │   │   ├── impact_detection_service.dart      # ROIフレーム差分によるインパクト検出
 │   │   ├── video_trim_service.dart            # easy_video_editorによるトリミング
+│   │   ├── club_face_angle_detection_service.dart  # Sobelエッジ＋角度ヒストグラムでヒット角を推定
 │   │   └── database_service.dart              # sqfliteによるCRUD・Entity⇔Rowマッピング
 │   └── repositories/
 │       └── swing_session_repository.dart      # Repository実装
@@ -61,9 +67,9 @@ lib/
         └── swing_session_card.dart
 
 test/
-├── domain/value_objects/          # VideoPath / Fps / SwingDuration
+├── domain/value_objects/          # VideoPath / Fps / SwingDuration / HitAngle
 ├── domain/entities/                # SwingSession
-├── application/use_cases/          # PrepareSwingClipUseCase
+├── application/use_cases/          # PrepareSwingSessionUseCase
 └── data/repositories/               # SwingSessionRepository
 ```
 
@@ -100,6 +106,7 @@ flowchart TB
 | `targetFps` | `Fps` | 目標フレームレート |
 | `note` | `String?` | メモ（現状UIからは未使用、将来拡張用） |
 | `impactDetected` | `bool` | インパクト検出に成功したか（デフォルト`true`） |
+| `analysisAttributes` | `List<SwingAnalysisAttribute>` | スイング解析の結果一覧（デフォルト空リスト。[5.2](#52-スイング解析の拡張設計)参照） |
 
 `durationLabel`ゲッターは`duration.label`に委譲し、`mm:ss.t`（100ミリ秒精度）形式の表示文字列を返す。
 
@@ -112,8 +119,11 @@ flowchart TB
 | `VideoPath` | `String` | 非空 | 動画ファイルの場所を表す |
 | `Fps` | `int` | `> 0` | フレームレート。`1000/fps`等の計算でのゼロ除算を防ぐ |
 | `SwingDuration` | `int`（ミリ秒） | `>= 0` | 再生時間。`mm:ss.t`形式の表示ラベルを自分自身で持つ |
+| `HitAngle` | `double`（度） | なし（推定値のため） | クラブフェース角度の推定値。`SwingAnalysisAttribute`を実装。表示は撮影アングル（右打ちゴルファーを正面から、ゴルファーが画像上部）を前提に`degrees > 0`を「右」、`< 0`を「左」、`0`を「スクエア」として整形する（`displayValue`内で変換。解析ロジック自体は符号付きdegreesのまま） |
 
 不変条件に違反した場合は`InvalidValueObjectException`（`DomainException`のサブクラス）をthrowする（`assert`ではなくリリースビルドでも有効な例外）。
+
+`SwingAnalysisAttribute`は不変条件を持つVOではなく、「スイングレビュー画面に表示する属性情報」という表示用の役割を表すインターフェース（`label`・`displayValue`の2つのgetterのみ）。`HitAngle`はこれを実装することで、UIから見れば「ラベルと表示用文字列を持つ何か」として一律に扱える。詳細は[5.2](#52-スイング解析の拡張設計)。
 
 ### 4.3 Repository
 
@@ -150,11 +160,22 @@ classDiagram
         +Fps targetFps
         +String? note
         +bool impactDetected
+        +List~SwingAnalysisAttribute~ analysisAttributes
         +String durationLabel
     }
     class VideoPath { +String value }
     class Fps { +int value }
     class SwingDuration { +int milliseconds; +String label }
+    class SwingAnalysisAttribute {
+        <<interface>>
+        +String label
+        +String displayValue
+    }
+    class HitAngle {
+        +double degrees
+        +String label
+        +String displayValue
+    }
     class DomainException { +String message }
     class InvalidValueObjectException
     class ISwingSessionRepository {
@@ -171,6 +192,8 @@ classDiagram
     SwingSession --> VideoPath
     SwingSession --> Fps
     SwingSession --> SwingDuration
+    SwingSession --> SwingAnalysisAttribute
+    HitAngle ..|> SwingAnalysisAttribute
     InvalidValueObjectException --|> DomainException
     ISwingSessionRepository <|.. SwingSessionRepository
     SwingSessionRepository --> DatabaseService
@@ -186,11 +209,11 @@ classDiagram
 | `GetAllSwingSessionsUseCase` | 全セッション取得（履歴一覧用） | Repositoryへの単純委譲 |
 | `GetSwingSessionUseCase` | IDで1件取得 | 存在しない場合`SwingSessionNotFoundException` |
 | `DeleteSwingSessionUseCase` | IDで削除 | Repositoryへの単純委譲（DB行＋動画ファイル削除） |
-| `PrepareSwingClipUseCase` | インパクト検出＋トリミング | 唯一ロジックを持つUseCase。詳細は5.1 |
+| `PrepareSwingSessionUseCase` | インパクト検出＋トリミング＋スイング解析 | 唯一ロジックを持つUseCase。詳細は5.1（旧`PrepareSwingClipUseCase`から改名。トリミングだけでなく解析も担うため、より広い役割を表す名前に変更） |
 
-### 5.1 PrepareSwingClipUseCase（中核ロジック）
+### 5.1 PrepareSwingSessionUseCase（中核ロジック）
 
-撮影直後のドラフト`SwingSession`を受け取り、インパクト（ボールが消えた瞬間）を検出できた場合はその前後0.2秒だけを残した動画にトリミングする。検出できなかった場合は元の動画のまま`impactDetected: false`を付けて返す。
+撮影直後のドラフト`SwingSession`を受け取り、インパクト（ボールが消えた瞬間）を検出できた場合はその前後0.2秒だけを残した動画にトリミングし、続けて登録済みの`SwingAnalyzer`群を実行して解析結果を`analysisAttributes`に格納する。インパクトを検出できなかった場合はトリミングも解析も行わず、元の動画のまま`impactDetected: false`を付けて返す（解析はインパクト時刻に依存するため）。
 
 ```dart
 static const _clipMargin = Duration(milliseconds: 200);
@@ -198,17 +221,75 @@ static const _clipMargin = Duration(milliseconds: 200);
 Future<SwingSession> execute(SwingSession draft) async {
   final impactAt = await _impactDetection.detectImpactTimestamp(...);
   if (impactAt == null) {
-    return draft.copyWith(impactDetected: false);   // フォールバック
+    return draft.copyWith(impactDetected: false);   // フォールバック（解析もスキップ）
   }
   // start = impactAt - 200ms（0未満はクランプ）
   // end   = impactAt + 200ms（動画長を超える場合はクランプ）
   final trimmedPath = await _videoTrim.trim(...);
   await _videoStorage.delete(draft.videoPath.value);  // 元ファイルは削除
-  return draft.copyWith(videoPath: ..., duration: ..., impactDetected: true);
+
+  final attributes = <SwingAnalysisAttribute>[];
+  for (final analyzer in _analyzers) {
+    final attribute = await analyzer.analyze(draft.videoPath.value, impactAt);
+    if (attribute != null) attributes.add(attribute);
+  }
+
+  return draft.copyWith(
+    videoPath: ..., duration: ..., impactDetected: true,
+    analysisAttributes: attributes,
+  );
 }
 ```
 
 依存先（`ImpactDetectionService` / `VideoTrimService` / `VideoStorageService`）はInfrastructure層のサービスで、VOではなく`String`/`Duration`のプリミティブ型をそのまま受け渡す（境界でのunwrap方針。3.のアーキテクチャ節参照）。
+
+### 5.2 スイング解析の拡張設計
+
+[Issue #3](https://github.com/aaandou/GolfSwingAnalyzer/issues/3)（「今後、その他の解析も追加するため、属性情報が増えていくことも想定した設計にする」）への対応として、`SwingSession`は単一の`hitAngle`フィールドではなく`List<SwingAnalysisAttribute>`を持つ。新しい解析を追加する際の変更点は次の3つに閉じる。
+
+1. `SwingAnalysisAttribute`を実装する新しいVOを1つ追加する
+2. `SwingAnalyzer`インターフェースを実装する新しい解析クラスを1つ追加する
+3. `PrepareSwingSessionUseCase`に渡す`List<SwingAnalyzer>`（DI配線）に登録する
+
+PlaybackScreenのUIや`DatabaseService`の`type`によるマッピング以外は、新しい解析を追加しても変更不要。
+
+```dart
+abstract interface class SwingAnalyzer {
+  Future<SwingAnalysisAttribute?> analyze(String videoPath, Duration impactAt);
+}
+
+class HitAngleAnalyzer implements SwingAnalyzer {
+  final ClubFaceAngleDetectionService _detection;
+  HitAngleAnalyzer(this._detection);
+
+  @override
+  Future<SwingAnalysisAttribute?> analyze(String videoPath, Duration impactAt) async {
+    final degrees = await _detection.detectAngle(videoPath, impactAt);
+    return degrees == null ? null : HitAngle(degrees);
+  }
+}
+```
+
+#### ヒット角検出アルゴリズム（`ClubFaceAngleDetectionService`、簡易ヒューリスティック）
+
+インパクト検出と同様、精度を保証しないbest-effortな画像解析。
+
+1. `impactAt`より少し手前のフレームを取得する（インパクト直後はクラブがブレて見えなくなっている可能性があるため）
+2. `OverheadAlignmentGuide`と同じ中心点を、ボール用ROIよりやや広め（短辺の25%程度）にクロップする
+3. グレースケール化し、Sobelオペレータで各ピクセルの勾配（Gx, Gy）を計算する
+4. 勾配強度がしきい値を超えるピクセルについて、勾配方向（`atan2(Gy, Gx)`）を強度で重み付けしてヒストグラムに集計する
+5. ヒストグラムのピーク方向から90°引いた値を、水平からのクラブフェース角度（`HitAngle.degrees`）とする
+6. 十分な強度のピクセルが見つからない場合は`null`を返し、`analysisAttributes`には追加されない（履歴上は無表示になるだけで、`impactDetected`自体には影響しない）
+
+```mermaid
+flowchart TD
+    A[impactAt直前のフレームを取得] --> B[中心点を短辺25%でクロップ]
+    B --> C[グレースケール化 + Sobelで勾配計算]
+    C --> D[強度がしきい値超のピクセルの勾配方向をヒストグラム化]
+    D --> E{十分な票が集まったか}
+    E -- No --> F[null: 属性情報に追加しない]
+    E -- Yes --> G[ピーク方向-90° = HitAngle.degrees]
+```
 
 ## 6. シーケンス図
 
@@ -221,9 +302,10 @@ sequenceDiagram
     participant CameraRecordingService
     participant VideoStorageService
     participant PlaybackScreen
-    participant PrepareSwingClipUseCase
+    participant PrepareSwingSessionUseCase
     participant ImpactDetectionService
     participant VideoTrimService
+    participant HitAngleAnalyzer
     participant SaveSwingSessionUseCase
     participant SwingSessionRepository
     participant DatabaseService
@@ -237,13 +319,15 @@ sequenceDiagram
     VideoStorageService-->>RecordScreen: videoPath
     RecordScreen->>PlaybackScreen: push /playback (draft SwingSession)
     User->>PlaybackScreen: 保存タップ
-    PlaybackScreen->>PrepareSwingClipUseCase: execute(draft)
-    PrepareSwingClipUseCase->>ImpactDetectionService: detectImpactTimestamp(videoPath, duration)
-    ImpactDetectionService-->>PrepareSwingClipUseCase: Duration（検出成功）
-    PrepareSwingClipUseCase->>VideoTrimService: trim(videoPath, start, end)
-    VideoTrimService-->>PrepareSwingClipUseCase: trimmedPath
-    PrepareSwingClipUseCase->>VideoStorageService: delete(originalPath)
-    PrepareSwingClipUseCase-->>PlaybackScreen: SwingSession(impactDetected: true)
+    PlaybackScreen->>PrepareSwingSessionUseCase: execute(draft)
+    PrepareSwingSessionUseCase->>ImpactDetectionService: detectImpactTimestamp(videoPath, duration)
+    ImpactDetectionService-->>PrepareSwingSessionUseCase: Duration（検出成功）
+    PrepareSwingSessionUseCase->>VideoTrimService: trim(videoPath, start, end)
+    VideoTrimService-->>PrepareSwingSessionUseCase: trimmedPath
+    PrepareSwingSessionUseCase->>VideoStorageService: delete(originalPath)
+    PrepareSwingSessionUseCase->>HitAngleAnalyzer: analyze(videoPath, impactAt)
+    HitAngleAnalyzer-->>PrepareSwingSessionUseCase: HitAngle?（検出できなければnull）
+    PrepareSwingSessionUseCase-->>PlaybackScreen: SwingSession(impactDetected: true, analysisAttributes: [...])
     PlaybackScreen->>SaveSwingSessionUseCase: execute(session)
     SaveSwingSessionUseCase->>SwingSessionRepository: save(session)
     SwingSessionRepository->>DatabaseService: insertSession(session)
@@ -251,7 +335,7 @@ sequenceDiagram
     PlaybackScreen->>PlaybackScreen: 履歴を再取得し /history へ戻る
 ```
 
-検出失敗時は `ImpactDetectionService` が `null` を返し、`PrepareSwingClipUseCase` はトリミングを行わず `impactDetected: false` のまま元動画を保存する（トリム・削除の呼び出し自体が発生しない）。
+検出失敗時は `ImpactDetectionService` が `null` を返し、`PrepareSwingSessionUseCase` はトリミング・解析のいずれも行わず `impactDetected: false` のまま元動画を保存する（トリム・削除・解析の呼び出し自体が発生しない）。
 
 ### 6.2 インパクト検出アルゴリズム（粗→密の2段階走査）
 
@@ -311,6 +395,10 @@ GoRouterの`StatefulShellRoute.indexedStack`で「撮影」「履歴」をボト
 
 確認ダイアログの文言選択は`deleteConfirmationMessage()`という純粋関数に切り出し、Widgetツリーをpumpしなくても単体テストできるようにしている。`_isProcessing`（インパクト検出・トリミング中）の間はAppBarの削除アクションも無効化し、処理中の動画が消えないようにする。
 
+### 7.2 スイング解析結果の表示
+
+動画表示部（`AspectRatio`/`VideoPlayer`）の直下、シークバーの上に`session.analysisAttributes`を`label: displayValue`の形で縦に並べて表示する（[Issue #3](https://github.com/aaandou/GolfSwingAnalyzer/issues/3)）。リストが空（インパクト未検出、または個々の解析が`null`を返した場合）は何も表示しない。新しい解析属性が増えてもこの表示部分のコードは変更不要。
+
 ## 8. 永続化
 
 - **動画ファイル**：アプリのドキュメントディレクトリ配下 `swings/` に `swing_<timestamp>.mp4` として保存（`VideoStorageService`）
@@ -326,9 +414,20 @@ CREATE TABLE swing_sessions (
   note TEXT,
   impactDetected INTEGER NOT NULL DEFAULT 1
 )
+
+CREATE TABLE swing_analysis_attributes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  swingSessionId INTEGER NOT NULL,
+  type TEXT NOT NULL,    -- 例: 'hitAngle'
+  value TEXT NOT NULL    -- 例: 角度を文字列化した値
+)
 ```
 
-スキーマバージョンは2（v1→v2で`impactDetected`列を追加、`onUpgrade`でマイグレーション）。Entity↔Row変換は`DatabaseService._toRow`/`_fromRow`がVOのwrap/unwrapも含めて一括して担う。
+スキーマバージョンは3（v1→v2で`impactDetected`列を追加、v2→v3で`swing_analysis_attributes`テーブルを追加。いずれも`onUpgrade`でマイグレーション）。
+
+`swing_analysis_attributes`は外部キー制約（CASCADE）には依存せず、`DatabaseService.deleteSession`内で明示的に子テーブルの行も削除する（既存コードの「暗黙のDB機能に頼らず明示的に処理する」スタイルと一貫させるため）。`type`文字列から具体的なVO（`HitAngle`等）への復元は`DatabaseService`内の小さなマッピング関数が担う唯一の場所で、新しい解析属性を追加する際にはここにも1行追加が必要になる。
+
+`getAllSessions`・`getSessionById`はいずれも対応する`swing_analysis_attributes`行を一括取得して`SwingSession.analysisAttributes`に組み立てる（履歴一覧から再生画面に渡す`SwingSession`にも属性が必要なため、履歴系のクエリでもN+1にならないよう一括取得する）。Entity↔Row変換は`DatabaseService._toRow`/`_fromRow`がVOのwrap/unwrapも含めて一括して担う。
 
 ## 9. テスト方針
 
@@ -337,9 +436,10 @@ CLAUDE.mdの優先順位（Domain > UseCase > Repository、Widgetテストは必
 | 対象 | テスト内容 |
 |---|---|
 | `VideoPath` / `Fps` / `SwingDuration` | 不変条件の検証、等価性、`SwingDuration.label`の実機検証済み境界値（`00:00.4`/`00:03.5`/`00:19.5`等）を固定化 |
-| `SwingSession` | `copyWith`・等価性のVO合成サニティチェック |
-| `PrepareSwingClipUseCase` | 検出成功時のトリム呼び出し・検出失敗時のフォールバック・トリム窓のクランプ（手書きFakeで`ImpactDetectionService`/`VideoTrimService`/`VideoStorageService`を代替） |
-| `SwingSessionRepository` | `delete`がDB行と動画ファイルの両方を消すこと |
+| `HitAngle` | `displayValue`の整形（小数1桁＋°）、`SwingAnalysisAttribute`としての`label`/`displayValue` |
+| `SwingSession` | `copyWith`・等価性のVO合成サニティチェック（`analysisAttributes`含む） |
+| `PrepareSwingSessionUseCase` | 検出成功時のトリム呼び出し・検出失敗時のフォールバック・トリム窓のクランプ・登録された`SwingAnalyzer`が呼ばれて結果が`analysisAttributes`に入ること・検出失敗時は解析自体がスキップされること（手書きFakeで`ImpactDetectionService`/`VideoTrimService`/`VideoStorageService`/`SwingAnalyzer`を代替） |
+| `SwingSessionRepository` | `delete`がDB行・動画ファイル・解析属性の行をすべて消すこと |
 
 モックライブラリ（mocktail等）や`sqflite_common_ffi`は導入せず、依存の少ない手書きFakeで代替している（既存依存方針との一貫性を優先）。
 
