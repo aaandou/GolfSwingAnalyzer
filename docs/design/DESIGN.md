@@ -298,7 +298,18 @@ GoRouterの`StatefulShellRoute.indexedStack`で「撮影」「履歴」をボト
 /playback  （再生画面、extra: PlaybackArgs）─ record/historyどちらからもpushされる
 ```
 
-`PlaybackArgs.isFreshRecording`で「撮影直後のレビュー（削除/保存ボタン）」と「履歴からの再生（削除ボタンのみ）」の2モードを切り替える。
+`PlaybackArgs.isFreshRecording`で「撮影直後のレビュー」と「履歴からの再生」の2モードを切り替える。
+
+### 7.1 スイングレビュー画面の削除操作
+
+削除ボタンは再生・速度選択などの操作ボタン群から離し、AppBarのタイトル右側に「削除」のテキストアクションとして配置する（誤操作防止。[Issue #1](https://github.com/aaandou/GolfSwingAnalyzer/issues/1)）。タップすると確認ダイアログ（キャンセル／削除）を表示し、確定後にのみ削除を実行する。
+
+| モード | AppBarの「削除」タップ後の確認文言 | 確定後の処理 | ボトム領域 |
+|---|---|---|---|
+| `isFreshRecording: true` | 「この録画を削除しますか？」 | `_discard()`（未保存の動画ファイルのみ削除） | 「保存」ボタンのみ（全幅） |
+| `isFreshRecording: false` | 「このスイングを削除しますか？元に戻せません。」 | `_delete()`（DB行＋動画ファイルを削除） | ボタンなし |
+
+確認ダイアログの文言選択は`deleteConfirmationMessage()`という純粋関数に切り出し、Widgetツリーをpumpしなくても単体テストできるようにしている。`_isProcessing`（インパクト検出・トリミング中）の間はAppBarの削除アクションも無効化し、処理中の動画が消えないようにする。
 
 ## 8. 永続化
 

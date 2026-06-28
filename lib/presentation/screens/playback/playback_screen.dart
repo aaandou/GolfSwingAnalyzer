@@ -10,6 +10,12 @@ import '../../providers/providers.dart';
 
 const List<double> kPlaybackSpeeds = [1.0, 0.5, 0.25, 0.1];
 
+String deleteConfirmationMessage({required bool isFreshRecording}) {
+  return isFreshRecording
+      ? 'この録画を削除しますか？'
+      : 'このスイングを削除しますか？元に戻せません。';
+}
+
 class PlaybackScreen extends ConsumerStatefulWidget {
   final PlaybackArgs args;
 
@@ -84,12 +90,56 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
     GoRouter.of(context).pop();
   }
 
+  Future<void> _confirmDelete() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('削除の確認'),
+        content: Text(
+          deleteConfirmationMessage(
+            isFreshRecording: widget.args.isFreshRecording,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('キャンセル'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
+            child: const Text('削除'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    if (widget.args.isFreshRecording) {
+      await _discard();
+    } else {
+      await _delete();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final speed = ref.watch(playbackSpeedProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('スイングレビュー')),
+      appBar: AppBar(
+        title: const Text('スイングレビュー'),
+        actions: [
+          TextButton(
+            onPressed: _isProcessing ? null : _confirmDelete,
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
+            child: const Text('削除'),
+          ),
+        ],
+      ),
       body: FutureBuilder<void>(
         future: _initializeFuture,
         builder: (context, snapshot) {
@@ -168,42 +218,23 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: widget.args.isFreshRecording
-                    ? Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed: _isProcessing ? null : _discard,
-                              child: const Text('削除'),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: _isProcessing ? null : _save,
-                              child: _isProcessing
-                                  ? const SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                      ),
-                                    )
-                                  : const Text('保存'),
-                            ),
-                          ),
-                        ],
-                      )
-                    : SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton(
-                          onPressed: _delete,
-                          child: const Text('削除'),
-                        ),
-                      ),
-              ),
+              if (widget.args.isFreshRecording)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _isProcessing ? null : _save,
+                      child: _isProcessing
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Text('保存'),
+                    ),
+                  ),
+                ),
               const SizedBox(height: 16),
             ],
             ),
